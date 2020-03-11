@@ -9,8 +9,26 @@ from email.mime.image import MIMEImage
 from email.mime.multipart import MIMEMultipart
 
 class lock:
+	def __init__(self):
+		# Open serial connection.
+		self.ser = serial.Serial('/dev/ttyACM0', baudrate=9600)
+		self.camera = PiCamera()
+		time.sleep(2)
+		print("Ready to work...")
+		
+		# Set parameters for SMTP email.
+		self.port = 587
+		self.smtp_server = "smtp.gmail.com"
+		self.sender_email = "arduinolock1234@gmail.com"
+		self.receiver_email = "razorzxz@fastmail.fm"
+		self.password = "ArduinoPassword123"
+		self.message1 = "2-state authentication password: "
+		self.message2 = "Unauthorized access attempt detected, generating new password: "
+		self.ser.flushInput()
+		self.command = '0'	
+		
 	# Send email with an image and a message attached.		
-	def send_mail_image(ImgFileName, smtp_server, port, sender_email, password, receiver_email, message):
+	def send_mail_image(self, ImgFileName, smtp_server, port, sender_email, password, receiver_email, message):
 		print("Sending email")
 		img_data = open(ImgFileName, 'rb').read()
 		msg = MIMEMultipart()
@@ -32,7 +50,7 @@ class lock:
 		s.quit()
 
 	# Send email with only message attached.	
-	def send_mail(smtp_server, port, sender_email, password, receiver_email, message):
+	def send_mail(self, smtp_server, port, sender_email, password, receiver_email, message):
 		print("Sending email")
 		msg = MIMEMultipart()
 		msg['Subject'] = 'Arduino Password'
@@ -51,55 +69,38 @@ class lock:
 
 	def main(self):
 		try:
-			# Open serial connection.
-			ser = serial.Serial('/dev/ttyACM0', baudrate=9600)
-			camera = PiCamera()
-			time.sleep(2)
-			print("Ready to work...")
-			
-			# Set parameters for SMTP email.
-			port = 587
-			smtp_server = "smtp.gmail.com"
-			sender_email = "arduinolock1234@gmail.com"
-			receiver_email = "razorzxz@fastmail.fm"
-			password = "ArduinoPassword123"
-			message1 = "2-state authentication password: "
-			message2 = "Unauthorized access attempt detected, generating new password: "
-			ser.flushInput()
-			command = '0'
-			
 			# Main while loop that waits for serial data.
 			# Arduino sends 1 or 2 depending on the state it is in.
 			# If Arduino is waiting for 2-state authentication.
 			# If Arduino is in full-lock mode. (Unauthorized access attempt)
 			while(1):
-				while ser.inWaiting():
+				while self.ser.inWaiting():
 					print("Reading serial")
-					command = ser.read()
+					self.command = self.ser.read()
 					time.sleep(1)
-				if command == '1':
+				if self.command == '1':
 					print("Running command 1")
 					new_password = str(random.randint(1000, 9999))
-					message1 = message1 + new_password
-					ser.write(new_password)
-					send_mail(smtp_server, port, sender_email, password, receiver_email, message1)
+					self.message1 = self.message1 + new_password
+					self.ser.write(new_password)
+					self.send_mail(self.smtp_server, self.port, self.sender_email, self.password, self.receiver_email, self.message1)
 					# Send email to user of password
 					# Send new password to Arduino
-					command = '0'
+					self.command = '0'
 					time.sleep(5)
 					print("Done")
-				elif command == '2':	
+				elif self.command == '2':	
 					print("Running command 2")
 					new_password = str(random.randint(1000, 9999))
-					message2 = message2 + new_password
-					ser.write(new_password)
-					camera.capture("/home/pi/Desktop/image.jpg")
+					self.message2 = message2 + new_password
+					self.ser.write(new_password)
+					self.camera.capture("/home/pi/Desktop/image.jpg")
 					time.sleep(2)
-					send_mail_image("/home/pi/Desktop/image.jpg", smtp_server, port, sender_email, password, receiver_email, message2)
+					self.send_mail_image("/home/pi/Desktop/image.jpg", self.smtp_server, self.port, self.sender_email, self.password, self.receiver_email, self.message2)
 					# Take photo of culprit
 					# Send reset password to email.
 					# Send reset password to Arduino.
-					command = '0'
+					self.command = '0'
 					time.sleep(5)
 					print("Done")
 		except KeyboardInterrupt:
