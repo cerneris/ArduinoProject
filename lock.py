@@ -26,7 +26,11 @@ class lock:
 		self.message2 = "Unauthorized access attempt detected, generating new password: "
 		self.ser.flushInput()
 		self.command = '0'	
-		
+	def password_gen(self):
+		password = ""
+		for i in range(0, 4):
+			password += str(random.randint(0, 9))
+		return password
 	# Send email with an image and a message attached.		
 	def send_mail_image(self, ImgFileName, smtp_server, port, sender_email, password, receiver_email, message):
 		print("Sending email")
@@ -77,31 +81,36 @@ class lock:
 				while self.ser.inWaiting():
 					print("Reading serial")
 					self.command = self.ser.read()
+					self.ser.flush()
 					time.sleep(1)
 				if self.command == '1':
 					print("Running command 1")
-					new_password = str(random.randint(1000, 9999))
-					self.message1 = self.message1 + new_password
+					new_password = self.password_gen()
+					message = self.message1 + new_password
 					self.ser.write(new_password)
-					self.send_mail(self.smtp_server, self.port, self.sender_email, self.password, self.receiver_email, self.message1)
+					time.sleep(1)
+					self.ser.flush()
+					self.send_mail(self.smtp_server, self.port, self.sender_email, self.password, self.receiver_email, message)
 					# Send email to user of password
 					# Send new password to Arduino
 					self.command = '0'
-					time.sleep(5)
+					time.sleep(2)
 					print("Done")
 				elif self.command == '2':	
 					print("Running command 2")
-					new_password = str(random.randint(1000, 9999))
-					self.message2 = message2 + new_password
+					new_password = self.password_gen()
+					message = self.message2 + new_password
 					self.ser.write(new_password)
+					time.sleep(1)
+					self.ser.flush()
 					self.camera.capture("/home/pi/Desktop/image.jpg")
 					time.sleep(2)
-					self.send_mail_image("/home/pi/Desktop/image.jpg", self.smtp_server, self.port, self.sender_email, self.password, self.receiver_email, self.message2)
+					self.send_mail_image("/home/pi/Desktop/image.jpg", self.smtp_server, self.port, self.sender_email, self.password, self.receiver_email, message)
 					# Take photo of culprit
 					# Send reset password to email.
 					# Send reset password to Arduino.
 					self.command = '0'
-					time.sleep(5)
+					time.sleep(2)
 					print("Done")
 		except KeyboardInterrupt:
 			print("Exiting program...")
