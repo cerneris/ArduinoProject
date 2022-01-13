@@ -19,9 +19,9 @@ class lock:
 		# Set parameters for SMTP email.
 		self.port = 587
 		self.smtp_server = "smtp.gmail.com"
-		self.sender_email = "arduinolock1234@gmail.com"
-		self.receiver_email = "razorzxz@fastmail.fm"
-		self.password = "ArduinoPassword123"
+		self.sender_email = 
+		self.receiver_email = 
+		self.password = 
 		self.message1 = "2-state authentication password: "
 		self.message2 = "Unauthorized access attempt detected, generating new password: "
 		self.ser.flushInput()
